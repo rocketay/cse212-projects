@@ -8,12 +8,23 @@ public static class Arrays
     /// <returns>array of doubles that are the multiples of the supplied number</returns>
     public static double[] MultiplesOf(double number, int length)
     {
-        // TODO Problem 1 Start
-        // Remember: Using comments in your program, write down your process for solving this problem
-        // step by step before you write the code. The plan should be clear enough that it could
-        // be implemented by another person.
+        // PLAN:
+        // 1. Create a new array of doubles with size 'length'.
+        // 2. Use a for loop with index i going from 0 to length - 1.
+        // 3. In each iteration, the multiple is 'number' times (i + 1),
+        //    because index 0 must hold the first multiple (number * 1),
+        //    index 1 holds number * 2, and so on.
+        // 4. Store that value in the array at position i.
+        // 5. After the loop ends, return the array.
 
-        return []; // replace this return statement with your own
+        double[] multiples = new double[length];
+
+        for (int i = 0; i < length; i++)
+        {
+            multiples[i] = number * (i + 1);
+        }
+
+        return multiples;
     }
 
     /// <summary>
@@ -25,9 +36,25 @@ public static class Arrays
     /// </summary>
     public static void RotateListRight(List<int> data, int amount)
     {
-        // TODO Problem 2 Start
-        // Remember: Using comments in your program, write down your process for solving this problem
-        // step by step before you write the code. The plan should be clear enough that it could
-        // be implemented by another person.
+        // PLAN:
+        // 1. The last 'amount' items of the list must move to the front,
+        //    keeping their order. The remaining items follow after them.
+        // 2. Calculate the index where the last 'amount' items start:
+        //    startIndex = data.Count - amount.
+        // 3. Use GetRange(startIndex, amount) to copy those last items
+        //    into a new temporary list (the "tail").
+        // 4. Use RemoveRange(startIndex, amount) to delete those items
+        //    from the end of the original list.
+        // 5. Use InsertRange(0, tail) to put the saved items at the
+        //    beginning of the original list.
+        // 6. If amount equals data.Count, startIndex is 0, so the tail is the
+        //    whole list; removing and reinserting it leaves the list unchanged,
+        //    which is the correct result.
+
+        int startIndex = data.Count - amount;
+
+        List<int> tail = data.GetRange(startIndex, amount);
+        data.RemoveRange(startIndex, amount);
+        data.InsertRange(0, tail);
     }
 }
