@@ -10,7 +10,8 @@
         queue.Enqueue(100);
         var value = queue.Dequeue();
         Console.WriteLine(value);
-        // Defect(s) Found:
+        // Defect(s) Found: Dequeue read index 1, which does not exist when the
+        // queue has only one item, so the program crashed. The front is index 0.
 
         Console.WriteLine("------------");
 
@@ -28,7 +29,9 @@
         Console.WriteLine(value);
         value = queue.Dequeue();
         Console.WriteLine(value);
-        // Defect(s) Found: 
+        // Defect(s) Found: Enqueue inserted at the front (Insert(0, value)) instead of
+        // adding to the back, and Dequeue used index 1 instead of index 0.
+        // Together they broke the FIFO order.
 
         Console.WriteLine("------------");
 
@@ -44,9 +47,10 @@
         catch (IndexOutOfRangeException) {
             Console.WriteLine("I got the exception as expected.");
         }
-        // Defect(s) Found: 
+        // Defect(s) Found: None. The empty check was already correct.
     }
 
+    // Index 0 is the front of the queue and the last index is the back
     private readonly List<int> _queue = new();
 
     /// <summary>
@@ -54,7 +58,9 @@
     /// </summary>
     /// <param name="value">Integer value to add to the queue</param>
     private void Enqueue(int value) {
-        _queue.Insert(0, value);
+        // Fixed: new items go to the back of the queue (end of the list).
+        // The original used Insert(0, value), which put them at the front.
+        _queue.Add(value);
     }
 
     /// <summary>
@@ -63,11 +69,13 @@
     /// <exception cref="IndexOutOfRangeException">If queue is empty</exception>
     /// <returns>First integer in the queue</returns>
     private int Dequeue() {
+        // Requirement: an empty queue must throw IndexOutOfRangeException
         if (_queue.Count <= 0)
             throw new IndexOutOfRangeException();
 
-        var value = _queue[1];
-        _queue.RemoveAt(1);
+        // Fixed: the front of the queue is index 0 (the original used index 1)
+        var value = _queue[0];
+        _queue.RemoveAt(0);
         return value;
     }
 }
