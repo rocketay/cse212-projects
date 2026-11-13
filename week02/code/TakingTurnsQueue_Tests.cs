@@ -1,108 +1,176 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-// TODO Problem 2 - Write and run test cases and fix the code to match requirements.
+// TODO Problem 1 - Run test cases and record any defects the test code finds in the comment above the test method.
+// DO NOT MODIFY THE CODE IN THE TESTS in this file, just the comments above the tests. 
+// Fix the code being tested to match requirements and make all tests pass. 
 
 [TestClass]
-public class PriorityQueueTests
+public class TakingTurnsQueueTests
 {
     [TestMethod]
-    // Scenario: Enqueue one item ("A", priority 1), dequeue it, and then look at the queue.
-    // Expected Result: Dequeue returns "A" and the queue is empty afterwards: "[]".
-    // Defect(s) Found: The test failed. The queue still contained "A (Pri:1)" after
-    // Dequeue because the original code returned the value but never removed
-    // the item from the list. Fixed by adding RemoveAt(highPriorityIndex).
-    public void TestPriorityQueue_1()
+    // Scenario: Create a queue with the following people and turns: Bob (2), Tim (5), Sue (3) and
+    // run until the queue is empty
+    // Expected Result: Bob, Tim, Sue, Bob, Tim, Sue, Tim, Sue, Tim, Tim
+    // Defect(s) Found: The test failed on the first person: it returned Sue instead of Bob.
+    // PersonQueue.Enqueue used Insert(0, person), which put new people at the front, while
+    // Dequeue removes from the front, so the queue worked as a stack (LIFO) instead of FIFO.
+    // Fixed by using Add(person) in PersonQueue.Enqueue.
+    public void TestTakingTurnsQueue_FiniteRepetition()
     {
-        var priorityQueue = new PriorityQueue();
-        priorityQueue.Enqueue("A", 1);
+        var bob = new Person("Bob", 2);
+        var tim = new Person("Tim", 5);
+        var sue = new Person("Sue", 3);
 
-        Assert.AreEqual("A", priorityQueue.Dequeue());
-        Assert.AreEqual("[]", priorityQueue.ToString());
+        Person[] expectedResult = [bob, tim, sue, bob, tim, sue, tim, sue, tim, tim];
+
+        var players = new TakingTurnsQueue();
+        players.AddPerson(bob.Name, bob.Turns);
+        players.AddPerson(tim.Name, tim.Turns);
+        players.AddPerson(sue.Name, sue.Turns);
+
+        int i = 0;
+        while (players.Length > 0)
+        {
+            if (i >= expectedResult.Length)
+            {
+                Assert.Fail("Queue should have ran out of items by now.");
+            }
+
+            var person = players.GetNextPerson();
+            Assert.AreEqual(expectedResult[i].Name, person.Name);
+            i++;
+        }
     }
 
     [TestMethod]
-    // Scenario: Enqueue A (1), B (5), C (3). Dequeue once.
-    // Expected Result: "B", because it has the highest priority and it is in the middle of the queue.
-    // Defect(s) Found: None. The first Dequeue returned the right value with the original code.
-    public void TestPriorityQueue_2()
+    // Scenario: Create a queue with the following people and turns: Bob (2), Tim (5), Sue (3)
+    // After running 5 times, add George with 3 turns.  Run until the queue is empty.
+    // Expected Result: Bob, Tim, Sue, Bob, Tim, Sue, Tim, George, Sue, Tim, George, Tim, George
+    // Defect(s) Found: The test failed on the first person: it returned Sue instead of Bob.
+    // This is the same defect as in the FiniteRepetition test: PersonQueue.Enqueue inserted
+    // at the front (Insert(0, person)), so the queue behaved as LIFO instead of FIFO.
+    // Fixed by using Add(person) in PersonQueue.Enqueue.
+    public void TestTakingTurnsQueue_AddPlayerMidway()
     {
-        var priorityQueue = new PriorityQueue();
-        priorityQueue.Enqueue("A", 1);
-        priorityQueue.Enqueue("B", 5);
-        priorityQueue.Enqueue("C", 3);
+        var bob = new Person("Bob", 2);
+        var tim = new Person("Tim", 5);
+        var sue = new Person("Sue", 3);
+        var george = new Person("George", 3);
 
-        Assert.AreEqual("B", priorityQueue.Dequeue());
+        Person[] expectedResult = [bob, tim, sue, bob, tim, sue, tim, george, sue, tim, george, tim, george];
+
+        var players = new TakingTurnsQueue();
+        players.AddPerson(bob.Name, bob.Turns);
+        players.AddPerson(tim.Name, tim.Turns);
+        players.AddPerson(sue.Name, sue.Turns);
+
+        int i = 0;
+        for (; i < 5; i++)
+        {
+            var person = players.GetNextPerson();
+            Assert.AreEqual(expectedResult[i].Name, person.Name);
+        }
+
+        players.AddPerson("George", 3);
+
+        while (players.Length > 0)
+        {
+            if (i >= expectedResult.Length)
+            {
+                Assert.Fail("Queue should have ran out of items by now.");
+            }
+
+            var person = players.GetNextPerson();
+            Assert.AreEqual(expectedResult[i].Name, person.Name);
+
+            i++;
+        }
     }
 
     [TestMethod]
-    // Scenario: Enqueue A (1), B (2), C (9). The highest priority is the LAST item. Dequeue once.
-    // Expected Result: "C"
-    // Defect(s) Found: The test failed. It returned "B" instead of "C". The loop in Dequeue used
-    // index < _queue.Count - 1, so the last item in the queue was never checked.
-    // Fixed by changing the condition to index < _queue.Count.
-    public void TestPriorityQueue_3()
+    // Scenario: Create a queue with the following people and turns: Bob (2), Tim (Forever), Sue (3)
+    // Run 10 times.
+    // Expected Result: Bob, Tim, Sue, Bob, Tim, Sue, Tim, Sue, Tim, Tim
+    // Defect(s) Found: The test failed on the first person (Sue instead of Bob) because of the
+    // LIFO defect in PersonQueue.Enqueue (fixed with Add). After that, a second defect appeared:
+    // GetNextPerson only added a person back to the queue when Turns > 1, so Tim (0 turns,
+    // meaning infinite) disappeared after his first turn. Fixed by adding the person back
+    // without changing Turns when Turns <= 0.
+    public void TestTakingTurnsQueue_ForeverZero()
     {
-        var priorityQueue = new PriorityQueue();
-        priorityQueue.Enqueue("A", 1);
-        priorityQueue.Enqueue("B", 2);
-        priorityQueue.Enqueue("C", 9);
+        var timTurns = 0;
 
-        Assert.AreEqual("C", priorityQueue.Dequeue());
+        var bob = new Person("Bob", 2);
+        var tim = new Person("Tim", timTurns);
+        var sue = new Person("Sue", 3);
+
+        Person[] expectedResult = [bob, tim, sue, bob, tim, sue, tim, sue, tim, tim];
+
+        var players = new TakingTurnsQueue();
+        players.AddPerson(bob.Name, bob.Turns);
+        players.AddPerson(tim.Name, tim.Turns);
+        players.AddPerson(sue.Name, sue.Turns);
+
+        for (int i = 0; i < 10; i++)
+        {
+            var person = players.GetNextPerson();
+            Assert.AreEqual(expectedResult[i].Name, person.Name);
+        }
+
+        // Verify that the people with infinite turns really do have infinite turns.
+        var infinitePerson = players.GetNextPerson();
+        Assert.AreEqual(timTurns, infinitePerson.Turns, "People with infinite turns should not have their turns parameter modified to a very big number. A very big number is not infinite.");
     }
 
     [TestMethod]
-    // Scenario: Enqueue A (3), B (3), C (1). A and B have the same highest priority. Dequeue once.
-    // Expected Result: "A", because it is closest to the front of the queue (FIFO for ties).
-    // Defect(s) Found: The test failed. It returned "B" instead of "A". The comparison used >=,
-    // so the later item with the same priority replaced the earlier one.
-    // Fixed by changing >= to >.
-    public void TestPriorityQueue_4()
+    // Scenario: Create a queue with the following people and turns: Tim (Forever), Sue (3)
+    // Run 10 times.
+    // Expected Result: Tim, Sue, Tim, Sue, Tim, Sue, Tim, Tim, Tim, Tim
+    // Defect(s) Found: The test failed on the first person (Sue instead of Tim) because of the
+    // LIFO defect in PersonQueue.Enqueue (fixed with Add). The second defect was the same one as
+    // in ForeverZero: a person with negative turns (infinite) was not added back to the queue
+    // because GetNextPerson only did it when Turns > 1. Fixed by adding the person back
+    // without changing Turns when Turns <= 0.
+    public void TestTakingTurnsQueue_ForeverNegative()
     {
-        var priorityQueue = new PriorityQueue();
-        priorityQueue.Enqueue("A", 3);
-        priorityQueue.Enqueue("B", 3);
-        priorityQueue.Enqueue("C", 1);
+        var timTurns = -3;
+        var tim = new Person("Tim", timTurns);
+        var sue = new Person("Sue", 3);
 
-        Assert.AreEqual("A", priorityQueue.Dequeue());
+        Person[] expectedResult = [tim, sue, tim, sue, tim, sue, tim, tim, tim, tim];
+
+        var players = new TakingTurnsQueue();
+        players.AddPerson(tim.Name, tim.Turns);
+        players.AddPerson(sue.Name, sue.Turns);
+
+        for (int i = 0; i < 10; i++)
+        {
+            var person = players.GetNextPerson();
+            Assert.AreEqual(expectedResult[i].Name, person.Name);
+        }
+
+        // Verify that the people with infinite turns really do have infinite turns.
+        var infinitePerson = players.GetNextPerson();
+        Assert.AreEqual(timTurns, infinitePerson.Turns, "People with infinite turns should not have their turns parameter modified to a very big number. A very big number is not infinite.");
     }
 
     [TestMethod]
-    // Scenario: Enqueue A (1), B (5), C (3), D (5). Dequeue until the queue is empty.
-    // Expected Result: B, D, C, A (highest priority first, ties in FIFO order).
-    // Defect(s) Found: The test failed on the second Dequeue: "B" was returned again instead
-    // of "D" because the item was never removed from the queue. Fixed by removing the item
-    // in Dequeue (the same defect found in TestPriorityQueue_1).
-    public void TestPriorityQueue_5()
-    {
-        var priorityQueue = new PriorityQueue();
-        priorityQueue.Enqueue("A", 1);
-        priorityQueue.Enqueue("B", 5);
-        priorityQueue.Enqueue("C", 3);
-        priorityQueue.Enqueue("D", 5);
-
-        Assert.AreEqual("B", priorityQueue.Dequeue());
-        Assert.AreEqual("D", priorityQueue.Dequeue());
-        Assert.AreEqual("C", priorityQueue.Dequeue());
-        Assert.AreEqual("A", priorityQueue.Dequeue());
-    }
-
-    [TestMethod]
-    // Scenario: Dequeue from an empty queue.
-    // Expected Result: InvalidOperationException with the message "The queue is empty."
+    // Scenario: Try to get the next person from an empty queue
+    // Expected Result: Exception should be thrown with appropriate error message.
     // Defect(s) Found: None. This test passed with the original code because the empty
     // check and the error message were already correct.
-    public void TestPriorityQueue_6()
+    public void TestTakingTurnsQueue_Empty()
     {
-        var priorityQueue = new PriorityQueue();
+        var players = new TakingTurnsQueue();
 
         try
         {
-            priorityQueue.Dequeue();
+            players.GetNextPerson();
             Assert.Fail("Exception should have been thrown.");
         }
         catch (InvalidOperationException e)
         {
-            Assert.AreEqual("The queue is empty.", e.Message);
+            Assert.AreEqual("No one in the queue.", e.Message);
         }
         catch (AssertFailedException)
         {
@@ -115,19 +183,5 @@ public class PriorityQueueTests
                                 e.GetType(), e.Message)
             );
         }
-    }
-
-    [TestMethod]
-    // Scenario: Enqueue A (5) and then B (1). Look at the queue without dequeuing.
-    // Expected Result: "[A (Pri:5), B (Pri:1)]", because Enqueue always adds to the back
-    // regardless of priority.
-    // Defect(s) Found: None. This test passed with the original code.
-    public void TestPriorityQueue_7()
-    {
-        var priorityQueue = new PriorityQueue();
-        priorityQueue.Enqueue("A", 5);
-        priorityQueue.Enqueue("B", 1);
-
-        Assert.AreEqual("[A (Pri:5), B (Pri:1)]", priorityQueue.ToString());
     }
 }
