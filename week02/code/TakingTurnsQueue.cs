@@ -40,11 +40,21 @@ public class TakingTurnsQueue
         else
         {
             Person person = _people.Dequeue();
-            if (person.Turns > 1)
+
+            if (person.Turns <= 0)
             {
+                // Fixed: 0 or less means infinite turns, so the person always goes back
+                // to the queue and their Turns value must not be modified.
+                _people.Enqueue(person);
+            }
+            else if (person.Turns > 1)
+            {
+                // The person still has turns left after this one: use one turn and
+                // put them at the back of the queue.
                 person.Turns -= 1;
                 _people.Enqueue(person);
             }
+            // If Turns == 1, this was their last turn, so they are not added back.
 
             return person;
         }
